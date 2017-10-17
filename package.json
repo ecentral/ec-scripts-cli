@@ -1,0 +1,17 @@
+{
+  "name": "ec-cli",
+  "version": "0.1.0",
+  "description": "Get started faster.",
+  "bin": {
+    "ec-cli": "bin/cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cross-spawn-promise": "^0.10.1",
+    "path": "^0.12.7"
+  }
+}
