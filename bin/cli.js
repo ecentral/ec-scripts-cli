@@ -1,47 +1,63 @@
 #!/usr/bin/env node
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
+const chalk = require('chalk');
 const spawn = require('cross-spawn-promise');
 
-// TODO: This should be provided by ec-scripts
-const pkgScripts = {
-    'init': 'cross-env NODE_ENV=development ec-scripts --init',
-    'start': 'cross-env NODE_ENV=development ec-scripts --start',
-    'build': 'cross-env NODE_ENV=production ec-scripts --build',
-    'build-watch': 'cross-env NODE_ENV=production ec-scripts --build --watch',
-    'test': 'cross-env NODE_ENV=test ec-scripts --test',
-    'config': 'cross-env NODE_ENV=development ec-scripts --show-config',
-};
+const getBanner = (v) => (`
+       ____ 
+  ___ / ___|
+ / _ \\ |    
+|  __/ |___ 
+ \\___|\\____| CLI v${v}
+`);
 
 const appPath = process.cwd();
+const cliPkg = require('../package.json');
 const pkgPath = path.resolve(appPath, 'package.json');
-const ecScriptsPkg = 'git+https://git@gitlab.ecentral.de/f.laukel/ec-scripts.git';
+const appNodeModulesPath = path.resolve(appPath, 'node_modules');
+const ecScriptsPath = path.resolve(appNodeModulesPath, 'ec-scripts');
+// TODO: Remove feature branch when 'ready'
+const ecScriptsPkgUrl = 'git+https://git@gitlab.ecentral.de/f.laukel/ec-scripts.git#feature/ec-cli-templates';
 
 const run = async () => {
-    console.log('Creating package.json ...');
+    console.log(chalk.cyan(getBanner(cliPkg.version)));
+    console.log();
+
+    console.log('Creating package.json');
     await spawn('npm', ['init', '--yes']);
 
-    console.log('Installing dependencies. Hang on ...');
-    await spawn('npm', ['i', '--save', ecScriptsPkg]);
+    console.log('Installing dependencies.', chalk.gray('Hang on ...'));
+    console.log();
+    await spawn('npm', ['i', '--save-dev', ecScriptsPkgUrl], { stdio: 'inherit' });
+    console.log();
 
-    console.log('Updating package.json scripts ...');
+    console.log('Updating package.json scripts');
     const pkg = require(pkgPath);
+    const ecScriptsPkg = require(path.join(ecScriptsPath, 'resources/package.json'));
     const updatedPkg = {
         ...pkg,
-        scripts: {
-            ...pkgScripts,
-        },
+        ...ecScriptsPkg,
     };
 
     fs.writeFileSync(pkgPath, JSON.stringify(updatedPkg, null, 2));
 
-    // TODO: Add .gitignore (defaults provided by ec-scripts)
-    // TODO: Add src/ files (defaults provided by ec-scripts)
+    console.log('Preparing project structure');
+    // TODO: Find out why .gitignore is not copied
+    await fs.copy(
+        path.join(ecScriptsPath, 'boilerplate'),
+        appPath
+    );
 
-    console.log('Initialize ec-scripts ...');
+    console.log('Initialize ec-scripts');
     await spawn('npm', ['run', 'init']);
 
-    console.log('ALL DONE!');
+    console.log();
+    console.log(chalk.green.bold('ALL DONE!'));
+    console.log();
+    console.log('Your project is now ready.');
+    console.log('Run', chalk.yellow('npm start'), 'to start the dev server.');
+
     process.exit();
 };
 

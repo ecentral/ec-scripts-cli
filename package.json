@@ -11,7 +11,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "chalk": "^2.1.0",
     "cross-spawn-promise": "^0.10.1",
-    "path": "^0.12.7"
+    "fs-extra": "^4.0.2"
   }
 }
