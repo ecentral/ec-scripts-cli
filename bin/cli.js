@@ -18,7 +18,7 @@ const pkgPath = path.resolve(appPath, 'package.json');
 const appNodeModulesPath = path.resolve(appPath, 'node_modules');
 const ecScriptsPath = path.resolve(appNodeModulesPath, 'ec-scripts');
 // TODO: Remove feature branch when 'ready'
-const ecScriptsPkgUrl = 'git+https://git@gitlab.ecentral.de/f.laukel/ec-scripts.git#feature/ec-cli-templates';
+const ecScriptsPkgUrl = 'git+ssh://git@gitlab.ecentral.de:2222/f.laukel/ec-scripts.git#feature/ec-cli-templates';
 
 const run = async () => {
     console.log(chalk.cyan(getBanner(cliPkg.version)));
