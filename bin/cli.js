@@ -4,6 +4,14 @@ const path = require('path');
 const chalk = require('chalk');
 const spawn = require('cross-spawn-promise');
 
+const cliPkg = require('../package.json');
+const appPath = process.cwd();
+const appPkgPath = path.resolve(appPath, 'package.json');
+const appNodeModulesPath = path.resolve(appPath, 'node_modules');
+const ecScriptsPath = path.resolve(appNodeModulesPath, 'ec-scripts');
+// TODO: Remove feature branch when 'ready'
+const ecScriptsPkgUrl = 'git+https://git@gitlab.ecentral.de/f.laukel/ec-scripts.git#feature/ec-cli-templates';
+
 const getBanner = (v) => (`
        ____ 
   ___ / ___|
@@ -12,45 +20,64 @@ const getBanner = (v) => (`
  \\___|\\____| CLI v${v}
 `);
 
-const appPath = process.cwd();
-const cliPkg = require('../package.json');
-const pkgPath = path.resolve(appPath, 'package.json');
-const appNodeModulesPath = path.resolve(appPath, 'node_modules');
-const ecScriptsPath = path.resolve(appNodeModulesPath, 'ec-scripts');
-// TODO: Remove feature branch when 'ready'
-const ecScriptsPkgUrl = 'git+https://git@gitlab.ecentral.de/f.laukel/ec-scripts.git#feature/ec-cli-templates';
+const initAppPkg = () => {
+    console.log('Creating package.json');
+
+    return spawn('npm', ['init', '--yes']);
+};
+
+const installDeps = () => {
+    console.log('Installing dependencies.', chalk.gray('Hang on ...'));
+
+    return spawn('npm', ['i', '--save-dev', ecScriptsPkgUrl]/*, { stdio: 'inherit' } */);
+};
+
+const updateAppPkg = () => {
+    console.log('Updating package.json scripts');
+
+    const pkg = require(appPkgPath);
+    const ecScriptsPkg = require(path.join(ecScriptsPath, 'resources/package.json'));
+    const updatedPkg = Object.assign({}, pkg, ecScriptsPkg);
+
+    return fs.writeFile(appPkgPath, JSON.stringify(updatedPkg, null, 2));
+};
+
+const initEcScripts = () => {
+    console.log('Initialize ec-scripts');
+
+    return spawn('npm', ['run', 'init']);
+};
+
+const prepareBoilerplate = () => {
+    console.log('Preparing project structure');
+
+    return Promise.all([
+        // Copy project boilerplate files.
+        fs.copy(
+            path.join(ecScriptsPath, 'boilerplate'),
+            appPath
+        ),
+        // Create .gitignore file from template if not existing.
+        fs.copy(
+            path.join(ecScriptsPath, 'resources/gitignore.tmpl'),
+            path.join(appPath, '.gitignore'),
+            { overwrite: false }
+        )
+    ]);
+};
 
 const run = async () => {
     console.log(chalk.cyan(getBanner(cliPkg.version)));
     console.log();
 
-    console.log('Creating package.json');
-    await spawn('npm', ['init', '--yes']);
+    await initAppPkg();
+    await installDeps();
+    await updateAppPkg();
 
-    console.log('Installing dependencies.', chalk.gray('Hang on ...'));
-    console.log();
-    await spawn('npm', ['i', '--save-dev', ecScriptsPkgUrl], { stdio: 'inherit' });
-    console.log();
-
-    console.log('Updating package.json scripts');
-    const pkg = require(pkgPath);
-    const ecScriptsPkg = require(path.join(ecScriptsPath, 'resources/package.json'));
-    const updatedPkg = {
-        ...pkg,
-        ...ecScriptsPkg,
-    };
-
-    fs.writeFileSync(pkgPath, JSON.stringify(updatedPkg, null, 2));
-
-    console.log('Preparing project structure');
-    // TODO: Find out why .gitignore is not copied
-    await fs.copy(
-        path.join(ecScriptsPath, 'boilerplate'),
-        appPath
-    );
-
-    console.log('Initialize ec-scripts');
-    await spawn('npm', ['run', 'init']);
+    await Promise.all([
+        initEcScripts(),
+        prepareBoilerplate(),
+    ]);
 
     console.log();
     console.log(chalk.green.bold('ALL DONE!'));
