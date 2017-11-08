@@ -13,7 +13,7 @@ const appNodeModulesPath = path.resolve(appPath, 'node_modules');
 const ecScriptsPkgUrl = 'git+https://git@gitlab.ecentral.de/f.laukel/ec-scripts.git#feature/latest-feedback';
 
 const getModulePath = (pkgName) => path.resolve(appNodeModulesPath, pkgName);
-const getPresetName = (preset) => `ec-scripts-${preset}`;
+const getPresetName = (preset) => `ec-scripts-${preset}`; // TODO: check if prefix is needed (git url)
 const getPresetPkgUrl = (preset) => `git+https://git@gitlab.ecentral.de/f.laukel/${getPresetName(preset)}.git#develop`;
 
 const getBanner = (v) => chalk.cyan(`
@@ -23,21 +23,6 @@ const getBanner = (v) => chalk.cyan(`
 |  __/ |___ 
  \\___|\\____| CLI v${v}
 `);
-
-const argv = yargs
-    .command('init [presets..]', 'Initialize ec-scripts app in current directory.')
-    .option('presets', {
-        type: 'array',
-        default: [],
-        describe: 'The optional presets you want to use.',
-    })
-    .help()
-    .usage(getBanner(cliPkg.version))
-    .alias('v', 'version')
-    .alias('h', 'help')
-    .demandCommand()
-    .strict()
-    .argv;
 
 const initAppPkg = () => {
     console.log('Creating package.json');
@@ -61,6 +46,22 @@ const updateAppPkg = () => {
     const updatedPkg = Object.assign({}, pkg, ecScriptsPkg);
 
     return fs.writeFile(appPkgPath, JSON.stringify(updatedPkg, null, 2));
+};
+
+const createEcconf = (presets = []) => {
+    console.log('Creating .ecconf.js');
+
+    const filename = path.join(appPath, '.ecconf.js');
+    const formattedPresets = `[${presets.map(preset => `'${preset}'`).join(', ')}]`;
+    const content = (
+        `
+module.exports = {
+    presets: ${formattedPresets},
+};
+        `
+    ).trim().concat('\n');
+
+    return fs.writeFile(filename, content);
 };
 
 const initEcScripts = () => {
@@ -106,6 +107,9 @@ const run = async (argv) => {
     await initAppPkg();
     await installDeps(argv.presets);
     await updateAppPkg();
+    if (argv.presets.length) {
+        await createEcconf(argv.presets);
+    }
 
     await Promise.all([
         initEcScripts(),
@@ -121,4 +125,19 @@ const run = async (argv) => {
     process.exit();
 };
 
-run(argv);
+run(
+    yargs
+        .command('init [presets..]', 'Initialize ec-scripts app in current directory.')
+        .option('presets', {
+            type: 'array',
+            default: [],
+            describe: 'The optional presets you want to use.',
+        })
+        .help()
+        .usage(getBanner(cliPkg.version))
+        .alias('v', 'version')
+        .alias('h', 'help')
+        .demandCommand()
+        .strict()
+        .argv
+);
