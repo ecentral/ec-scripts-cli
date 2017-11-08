@@ -3,16 +3,20 @@ const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
 const spawn = require('cross-spawn-promise');
+const yargs = require('yargs');
 
 const cliPkg = require('../package.json');
 const appPath = process.cwd();
 const appPkgPath = path.resolve(appPath, 'package.json');
 const appNodeModulesPath = path.resolve(appPath, 'node_modules');
-const ecScriptsPath = path.resolve(appNodeModulesPath, 'ec-scripts');
 // TODO: Remove feature branch when 'ready'
-const ecScriptsPkgUrl = 'git+https://git@gitlab.ecentral.de/f.laukel/ec-scripts.git#feature/ec-cli-templates';
+const ecScriptsPkgUrl = 'git+https://git@gitlab.ecentral.de/f.laukel/ec-scripts.git#feature/latest-feedback';
 
-const getBanner = (v) => (`
+const getModulePath = (pkgName) => path.resolve(appNodeModulesPath, pkgName);
+const getPresetName = (preset) => `ec-scripts-${preset}`;
+const getPresetPkgUrl = (preset) => `git+https://git@gitlab.ecentral.de/f.laukel/${getPresetName(preset)}.git#develop`;
+
+const getBanner = (v) => chalk.cyan(`
        ____ 
   ___ / ___|
  / _ \\ |    
@@ -20,23 +24,40 @@ const getBanner = (v) => (`
  \\___|\\____| CLI v${v}
 `);
 
+const argv = yargs
+    .command('init [presets..]', 'Initialize ec-scripts app in current directory.')
+    .option('presets', {
+        type: 'array',
+        default: [],
+        describe: 'The optional presets you want to use.',
+    })
+    .help()
+    .usage(getBanner(cliPkg.version))
+    .alias('v', 'version')
+    .alias('h', 'help')
+    .demandCommand()
+    .strict()
+    .argv;
+
 const initAppPkg = () => {
     console.log('Creating package.json');
 
     return spawn('npm', ['init', '--yes']);
 };
 
-const installDeps = () => {
+const installDeps = (presets = []) => {
     console.log('Installing dependencies.', chalk.gray('Hang on ...'));
 
-    return spawn('npm', ['i', '--save-dev', ecScriptsPkgUrl]/*, { stdio: 'inherit' } */);
+    const deps = [ecScriptsPkgUrl].concat(presets.map(getPresetPkgUrl));
+
+    return spawn('npm', ['install', '--save-dev', ...deps]/*, { stdio: 'inherit' } */);
 };
 
 const updateAppPkg = () => {
     console.log('Updating package.json scripts');
 
     const pkg = require(appPkgPath);
-    const ecScriptsPkg = require(path.join(ecScriptsPath, 'resources/package.json'));
+    const ecScriptsPkg = require(path.join(getModulePath('ec-scripts'), 'resources/package.json'));
     const updatedPkg = Object.assign({}, pkg, ecScriptsPkg);
 
     return fs.writeFile(appPkgPath, JSON.stringify(updatedPkg, null, 2));
@@ -48,35 +69,47 @@ const initEcScripts = () => {
     return spawn('npm', ['run', 'init']);
 };
 
-const prepareBoilerplate = () => {
+const prepareBoilerplate = async (presets = []) => {
     console.log('Preparing project structure');
 
+    await [
+        'ec-scripts',
+        ...presets.map(getPresetName)
+    ]
+        .map(module => path.join(getModulePath(module), 'boilerplate'))
+        .filter(boilerplatePath => fs.existsSync(boilerplatePath))
+        // These operations need to run sequentially.
+        .reduce((current, boilerplatePath) => (
+            current.then(() => fs.copy(
+                boilerplatePath,
+                appPath
+            ))
+        ), Promise.resolve());
+
+    // The following operations can run in parallel.
     return Promise.all([
-        // Copy project boilerplate files.
-        fs.copy(
-            path.join(ecScriptsPath, 'boilerplate'),
-            appPath
-        ),
         // Create .gitignore file from template if not existing.
         fs.copy(
-            path.join(ecScriptsPath, 'resources/gitignore.tmpl'),
+            path.join(getModulePath('ec-scripts'), 'resources/gitignore.tmpl'),
             path.join(appPath, '.gitignore'),
             { overwrite: false }
         )
     ]);
 };
 
-const run = async () => {
-    console.log(chalk.cyan(getBanner(cliPkg.version)));
+const run = async (argv) => {
+    console.log(getBanner(cliPkg.version));
+
+    console.log('Using presets:', argv.presets.length ? argv.presets : chalk.gray('none'));
     console.log();
 
     await initAppPkg();
-    await installDeps();
+    await installDeps(argv.presets);
     await updateAppPkg();
 
     await Promise.all([
         initEcScripts(),
-        prepareBoilerplate(),
+        prepareBoilerplate(argv.presets),
     ]);
 
     console.log();
@@ -88,6 +121,4 @@ const run = async () => {
     process.exit();
 };
 
-// TODO: Accept some args and make ec-cli little more 'interactive'
-// Don't just do this:
-run();
+run(argv);
