@@ -22,5 +22,10 @@
     "cross-spawn-promise": "^0.10.1",
     "fs-extra": "^4.0.2",
     "yargs": "^10.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb-base": "^11.3.2",
+    "eslint-plugin-import": "^2.8.0"
   }
 }
