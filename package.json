@@ -1,11 +1,18 @@
 {
   "name": "ec-cli",
   "version": "0.1.0",
-  "description": "Get started faster.",
+  "description": "Start building modern front end projects in seconds.",
   "author": "eCentral GmbH <info@ecentral.de>",
   "contributors": [
     "Felix Laukel <f.laukel@ecentral.de>"
   ],
+  "keywords": [
+    "ec-scripts",
+    "cli",
+    "project",
+    "generator"
+  ],
+  "main": "bin/cli.js",
   "bin": {
     "ec-cli": "bin/cli.js"
   },
