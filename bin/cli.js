@@ -11,10 +11,36 @@ const appPkgPath = path.resolve(appPath, 'package.json');
 const appNodeModulesPath = path.resolve(appPath, 'node_modules');
 // TODO: Remove feature branch when 'ready'
 const ecScriptsPkgUrl = 'git+https://git@gitlab.ecentral.de/f.laukel/ec-scripts.git#feature/latest-feedback';
+// Extract repository name if git url is passed (use last match)
+const gitRepoNameRegEx = /\/([a-z0-9\-]*)\.git*/i;
+// Check if preset contains only characters, numbers and -
+const presetNameRegEx = /^[a-z0-9\-]+$/i;
 
 const getModulePath = (pkgName) => path.resolve(appNodeModulesPath, pkgName);
-const getPresetName = (preset) => `ec-scripts-${preset}`; // TODO: check if prefix is needed (git url)
-const getPresetPkgUrl = (preset) => `git+https://git@gitlab.ecentral.de/f.laukel/${getPresetName(preset)}.git#develop`;
+const resolvePresetName = (preset) => {
+    // Extract repository name if git url was passed
+    const matches = preset.match(gitRepoNameRegEx);
+    if (matches && matches.length) {
+        console.log('resolvePresetName:', preset, '->', matches.slice(-1)[0]);
+        return matches.pop();
+    }
+
+    // Test if simple preset name was passed
+    if (presetNameRegEx.test(preset)) {
+        // Then prefix with 'ec-scripts-'
+        return `ec-scripts-${preset}`;
+    }
+
+    return preset;
+};
+const getPresetPkgUrl = (preset) => {
+    if (presetNameRegEx.test(preset)) {
+        // TODO: Remove url wrap when 'ready'
+        return `git+https://git@gitlab.ecentral.de/f.laukel/${resolvePresetName(preset)}.git`;
+    }
+
+    return preset
+};
 
 const getBanner = (v) => chalk.cyan(`
        ____ 
@@ -73,9 +99,10 @@ const initEcScripts = () => {
 const prepareBoilerplate = async (presets = []) => {
     console.log('Preparing project structure');
 
+    // Look for boilerplate/ folder in preset package and copy contents to project folder.
     await [
         'ec-scripts',
-        ...presets.map(getPresetName)
+        ...presets.map(resolvePresetName)
     ]
         .map(module => path.join(getModulePath(module), 'boilerplate'))
         .filter(boilerplatePath => fs.existsSync(boilerplatePath))
@@ -87,15 +114,14 @@ const prepareBoilerplate = async (presets = []) => {
             ))
         ), Promise.resolve());
 
-    // The following operations can run in parallel.
-    return Promise.all([
-        // Create .gitignore file from template if not existing.
-        fs.copy(
-            path.join(getModulePath('ec-scripts'), 'resources/gitignore.tmpl'),
-            path.join(appPath, '.gitignore'),
-            { overwrite: false }
-        )
-    ]);
+    // Create .gitignore file from template if not existing.
+    await fs.copy(
+        path.join(getModulePath('ec-scripts'), 'resources/gitignore.tmpl'),
+        path.join(appPath, '.gitignore'),
+        { overwrite: false }
+    );
+
+    return Promise.resolve();
 };
 
 const run = async (argv) => {
