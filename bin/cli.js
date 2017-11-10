@@ -11,6 +11,14 @@ const initEcScripts = require('../lib/utils/initEcScripts');
 const prepareBoilerplate = require('../lib/utils/prepareBoilerplate');
 const { version } = require('../package.json');
 
+process.on('unhandledRejection', (err) => {
+    console.log();
+    console.log(chalk.red('Oops!'), 'An error occured.');
+    console.log('If you specified presets, please make sure they are named correctly.');
+    console.log();
+    console.error(err);
+});
+
 const run = async (argv) => {
     console.log(getBanner(version));
 
