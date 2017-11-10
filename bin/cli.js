@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 const chalk = require('chalk');
 const yargs = require('yargs');
+const inquirer = require('inquirer');
 
 const getBanner = require('../lib/utils/getBanner');
+const resolvePresetName = require('../lib/utils/resolvePresetName');
 const initAppPkg = require('../lib/utils/initAppPkg');
 const installDeps = require('../lib/utils/installDeps');
 const updateAppPkg = require('../lib/utils/updateAppPkg');
@@ -22,7 +24,25 @@ process.on('unhandledRejection', (err) => {
 const run = async (argv) => {
     console.log(getBanner(version));
 
-    console.log('Using presets:', argv.presets.length ? argv.presets : chalk.gray('none'));
+    if (argv.presets.length) {
+        console.log('These Presets will be used:');
+        argv.presets
+            .map(resolvePresetName)
+            .forEach(name => console.log(`> ${name}`));
+        console.log();
+    }
+
+    const input = await inquirer.prompt({
+        type: 'confirm',
+        name: 'confirm',
+        message: `Set up new project in current directory?\nExisting files will be ${chalk.red('overwritten')}.`,
+    });
+
+    if (!input.confirm) {
+        console.log(chalk.gray('Setup aborted.'));
+        process.exit();
+    }
+
     console.log();
 
     await initAppPkg();
