@@ -36,8 +36,8 @@ ec-cli init react git://github.com/user/some-preset.git
 
 ### Notes
 
-**Using npm presets:** Preset names get resolved internally by prefixing `ec-scripts-`.  
-Therefore a preset name like `react` is resolved and `npm install`ed as `ec-scripts-react`.  
+**Using npm presets:** Preset names get resolved internally by prefixing `ec-scripts-preset-`.  
+Therefore a preset name like `react` is resolved and `npm install`ed as `ec-scripts-preset-react`.  
 If you want to publish an eC Scripts preset, make sure to prefix it correctly.
 
 **Using git presets:** When using a preset from git directly, the repository name needs to match the name in the preset's `package.json`.  
