@@ -16,7 +16,7 @@ const { version } = require('../package.json');
 process.on('unhandledRejection', (err) => {
     console.log();
     console.log(chalk.red('Oops!'), 'An error occured.');
-    console.log('If you specified presets, please make sure they are named correctly.');
+    console.log('If you specified presets, please make sure they are spelled correctly.');
     console.log();
     console.error(err);
 });
