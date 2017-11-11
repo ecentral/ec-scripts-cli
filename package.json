@@ -12,9 +12,9 @@
     "project",
     "generator"
   ],
-  "main": "bin/cli.js",
+  "main": "bin/ec-cli.js",
   "bin": {
-    "ec-cli": "bin/cli.js"
+    "ec-cli": "bin/ec-cli.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
