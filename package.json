@@ -12,6 +12,10 @@
     "project",
     "generator"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ecentral/ec-scripts-cli.git"
+  },
   "main": "bin/ec-cli.js",
   "bin": {
     "ec-cli": "bin/ec-cli.js"
