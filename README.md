@@ -73,3 +73,13 @@ Here's a basic file structure of how a preset can look:
   ecconf.js
   package.json
 ```
+
+## Acknowledgements
+
+We are grateful to the authors of existing related projects for their ideas and inspiration:
+
+[Preact CLI](https://github.com/developit/preact-cli)<br>
+
+## License
+
+MIT
