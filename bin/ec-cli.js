@@ -11,6 +11,7 @@ const updateAppPkg = require('../lib/utils/updateAppPkg');
 const createEcconf = require('../lib/utils/createEcconf');
 const initEcScripts = require('../lib/utils/initEcScripts');
 const prepareBoilerplate = require('../lib/utils/prepareBoilerplate');
+const hasCommand = require('../lib/utils/hasCommand');
 const { version } = require('../package.json');
 
 process.on('unhandledRejection', (err) => {
@@ -18,7 +19,7 @@ process.on('unhandledRejection', (err) => {
     console.log(chalk.red('Oops!'), 'An error occured.');
     console.log('If you specified presets, please make sure they are spelled correctly.');
     console.log();
-    console.error(err);
+    throw err;
 });
 
 const run = async (argv) => {
@@ -32,10 +33,20 @@ const run = async (argv) => {
         console.log();
     }
 
+    // check package manager
+    let pkgManager = argv.install;
+    if (!hasCommand(pkgManager)) {
+        console.log(chalk.yellow(`Package manager '${pkgManager}' not found.`));
+        pkgManager = 'npm'; // fall back to npm
+    }
+    console.log('Install using:', pkgManager);
+
+    console.log();
+
     const input = await inquirer.prompt({
         type: 'confirm',
         name: 'confirm',
-        message: `Set up new project in current directory?\nExisting files will be ${chalk.red('overwritten')}.`,
+        message: `Set up new project in current directory?\nExisting files may be ${chalk.red('overwritten')}.`,
     });
 
     if (!input.confirm) {
@@ -46,7 +57,7 @@ const run = async (argv) => {
     console.log();
 
     await initAppPkg();
-    await installDeps(argv.presets);
+    await installDeps(argv.presets, pkgManager);
     await updateAppPkg();
     if (argv.presets.length) {
         await createEcconf(argv.presets);
@@ -77,7 +88,14 @@ run(
                     default: [],
                     describe: 'The optional presets you want to use.',
                 });
-            })
+                cmd.option('i', {
+                    alias: 'install',
+                    type: 'string',
+                    default: 'yarn',
+                    describe: 'Defines the package manager that should be used.\nIf this one is not available, it will fall back to npm.',
+                });
+            }
+        )
         .example(
             '$0 init react git://github.com/user/some-preset.git',
             'Initializes a new ec-scripts project with React preset and a custom preset from git.'
