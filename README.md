@@ -2,6 +2,8 @@
 
 Start building modern front end projects in seconds.
 
+**⚠ THIS REPO IS DEPRECATED. Please use the multi-package repo at [ecentral-scripts](https://github.com/ecentral/ecentral-scripts). ⚠**
+
 ## Quick Overview
 
 eC Scripts CLI is a command-line tool that you can use to set up eC Scripts projects with only one command.
